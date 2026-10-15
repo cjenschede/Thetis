@@ -2792,6 +2792,11 @@ namespace Thetis
 			caps.Add("rx_only_ex");
 			// [ThetisLink TL2-1] END
 
+			// [ThetisLink TL2-5] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+			// One report per MOX of what the TX queue did (cmaster.TakeTCITxOverReport).
+			caps.Add("tx_queue_report_ex");
+			// [ThetisLink TL2-5] END
+
 			sendTextFrame("tci_caps_ex:" + string.Join(",", caps) + ";");
 		}
 
@@ -3214,6 +3219,16 @@ namespace Thetis
 			sendS9FrequencyEx(mhz);
 		}
 		// [ThetisLink TL2-1] END
+
+		// [ThetisLink TL2-5] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+		// tx_queue_report_ex: one line per MOX (cmaster.TakeTCITxOverReport). Self-gates
+		// on the ThetisLink-extensions checkbox.
+		public void PushTxQueueReportEx(string report)
+		{
+			if (consoleThreadSafe == null || !consoleThreadSafe.ThetisLinkExtensionsEnabled) return;
+			sendTextFrame(report);
+		}
+		// [ThetisLink TL2-5] END
 
 		// [ThetisLink TL2-3] BEGIN — modification by PA3GHM (cjenschede), 2026-05-29
 		// rx_only_ex:<bool>;  Push of the current "Receive only" state. Mirrors
@@ -4918,6 +4933,17 @@ namespace Thetis
                     m_server?.RefreshStreamRunState();
                     return;
                 }
+
+                // [ThetisLink TL2-5] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+                // The client says stop: what the TX queue did in this MOX, and what it
+                // still holds, before anything is released or cleared.
+                if (bOK && !bMox)
+                {
+                    string overReport = cmaster.TakeTCITxOverReport("trx");
+                    if (overReport != null)
+                        PushTxQueueReportEx(overReport);
+                }
+                // [ThetisLink TL2-5] END
 
                 bool useTciAudio = args.Length > 2 && args[2].ToLower() == "tci";
                 bool alreadyMox = consoleThreadSafe.MOX;
@@ -8511,6 +8537,25 @@ namespace Thetis
             }
         }
         // [ThetisLink TL2-3] END
+
+        // [ThetisLink TL2-5] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+        // A tx_queue_report_ex for an over that ended without a TRX from a client:
+        // the active TX listener may be gone by then, so every listener gets it,
+        // each self-gated on the extensions checkbox.
+        internal void BroadcastTxQueueReportEx(string report)
+        {
+            lock (m_objLocker)
+            {
+                if (m_socketListenersList == null) return;
+                foreach (var listener in m_socketListenersList)
+                {
+                    if (listener == null || listener.IsDisconnected()) continue;
+                    try { listener.PushTxQueueReportEx(report); }
+                    catch { /* best-effort; never let one listener block the others */ }
+                }
+            }
+        }
+        // [ThetisLink TL2-5] END
 
         // [ThetisLink TL2-4] BEGIN — modification by PA3GHM (cjenschede), 2026-06-03
         // Broadcast a rx_filter_band frame to every connected listener after a

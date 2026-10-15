@@ -37,6 +37,17 @@ the standard TCI behaviour from upstream v2.10.3.15 is preserved (build
 environment and titlebar/About-tag changes listed below remain present in
 either mode).
 
+TL2-5 addition on top of TL2-4 (active when the checkbox is on):
+
+- [add] `tx_queue_report_ex` — one line per MOX telling the TCI client what
+  Thetis' TCI TX queue did: the zeros before the first audio, the lowest
+  queue level after it, the zeros and underrun blocks after it, and what was
+  still queued at the end. Sent when the client switches TRX off (or, as a
+  fallback, when MOX ends another way). Listed in `tci_caps_ex`. The counters
+  are whole-sample increments in the existing TX callback; nothing changes in
+  what is transmitted. Format version 1:
+  `tx_queue_report_ex:1,<rate>,<block samples>,<over ms>,<lead zero ms>,<lowest ms|-1>,<zero ms>,<underruns>,<left ms>,<open requests>,<trx|mox>;`
+
 TL2-4 fix on top of TL2-3 — applies regardless of the ThetisLink-extensions
 checkbox state:
 

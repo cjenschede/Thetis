@@ -56,6 +56,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 
 namespace Thetis
@@ -492,6 +493,20 @@ namespace Thetis
         unsafe private static void* m_tciTxResampler = null;
         private const int TCI_TX_MAX_OUTSTANDING = 64;
         private const int TCI_TX_EXTRA_BUFFER_MS = 50;
+        // [ThetisLink TL2-5] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+        // What the TX queue did during one MOX, for tx_queue_report_ex (ThetisLink
+        // extensions). Counted in OnTCITxAudioInSamples under m_objTCITxStateLock,
+        // in whole samples; turned into one report and reset by TakeTCITxOverReport.
+        private static bool m_tciTxOverActive = false;
+        private static bool m_tciTxOverClosed = false;
+        private static bool m_tciTxOverHeardAudio = false;
+        private static long m_tciTxOverBlocks = 0;
+        private static int m_tciTxOverBlockSamples = 0;
+        private static long m_tciTxOverLeadZeroSamples = 0;
+        private static int m_tciTxOverLowestQueued = int.MaxValue;
+        private static long m_tciTxOverZeroSamples = 0;
+        private static int m_tciTxOverUnderruns = 0;
+        // [ThetisLink TL2-5] END
         // [ThetisLink TL2-1] BEGIN — modification by PA3GHM (cjenschede), 2026-05-07
         // Stock single cap split into standard (vink UIT) and extended (vink AAN). The
         // extended cap matches the hardware ceiling configured in SetRadioStructure (1536000).
@@ -1273,6 +1288,17 @@ namespace Thetis
         private static void serviceTCITxProtocol()
         {
             TCPIPtciServer tciServer = TCIServer;
+            // [ThetisLink TL2-5] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+            // MOX ended another way than a TRX from the client (the console, a
+            // safety path): the report goes out from here, before the reset below
+            // empties the queue. Taken once, so an over never reports twice.
+            if (!Audio.MOX)
+            {
+                string overReport = TakeTCITxOverReport("mox");
+                if (overReport != null && tciServer != null)
+                    tciServer.BroadcastTxQueueReportEx(overReport);
+            }
+            // [ThetisLink TL2-5] END
             if (tciServer == null || !tciServer.UsesActiveTCITxAudio() || !Audio.MOX)
             {
                 resetTCITxState();
@@ -1818,6 +1844,45 @@ namespace Thetis
             enqueueTCIAudio(block);
         }
 
+        // [ThetisLink TL2-5] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+        // One line per MOX for the ThetisLink server, then the counters start over:
+        // tx_queue_report_ex:1,<rate>,<block samples>,<over ms>,<lead zero ms>,
+        // <lowest ms|-1>,<zero ms>,<underruns>,<left ms>,<open requests>,<trigger>;
+        // The first field is the format version; the server reads version 1 only
+        // (sdr-remote-server tci_parser.rs) - the same agreement in two programs.
+        // Null when no over was counted since the last report.
+        internal static string TakeTCITxOverReport(string trigger)
+        {
+            lock (m_objTCITxStateLock)
+            {
+                if (!m_tciTxOverActive)
+                    return null;
+                long rate = m_cachedTxInputRate > 0 ? m_cachedTxInputRate : 48000;
+                Func<long, string> ms = samples => (samples * 1000 / rate).ToString(CultureInfo.InvariantCulture);
+                string report = "tx_queue_report_ex:1,"
+                    + rate.ToString(CultureInfo.InvariantCulture) + ","
+                    + m_tciTxOverBlockSamples.ToString(CultureInfo.InvariantCulture) + ","
+                    + ms(m_tciTxOverBlocks * m_tciTxOverBlockSamples) + ","
+                    + ms(m_tciTxOverLeadZeroSamples) + ","
+                    + (m_tciTxOverHeardAudio ? ms(m_tciTxOverLowestQueued) : "-1") + ","
+                    + ms(m_tciTxOverZeroSamples) + ","
+                    + m_tciTxOverUnderruns.ToString(CultureInfo.InvariantCulture) + ","
+                    + ms(m_tciTxQueuedSamples) + ","
+                    + m_tciTxChronoOutstanding.ToString(CultureInfo.InvariantCulture) + ","
+                    + trigger + ";";
+                m_tciTxOverActive = false;
+                m_tciTxOverClosed = Audio.MOX;
+                m_tciTxOverHeardAudio = false;
+                m_tciTxOverBlocks = 0;
+                m_tciTxOverLeadZeroSamples = 0;
+                m_tciTxOverLowestQueued = int.MaxValue;
+                m_tciTxOverZeroSamples = 0;
+                m_tciTxOverUnderruns = 0;
+                return report;
+            }
+        }
+        // [ThetisLink TL2-5] END
+
         private static unsafe void OnTCITxAudioInSamples(int nsamples, double* data)
         {
             if (data == null || nsamples <= 0)
@@ -1826,6 +1891,9 @@ namespace Thetis
             lock (m_objTCITxStateLock)
             {
                 int copied = 0;
+                // [ThetisLink TL2-5] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+                int queuedAtEntry = m_tciTxQueuedSamples;
+                // [ThetisLink TL2-5] END
                 while (copied < nsamples && m_tciTxSampleQueue.Count > 0)
                 {
                     float[] block = m_tciTxSampleQueue.Peek();
@@ -1855,6 +1923,40 @@ namespace Thetis
                     data[2 * i] = 0.0;
                     data[2 * i + 1] = 0.0;
                 }
+
+                // [ThetisLink TL2-5] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+                // One MOX: whole samples only, nothing allocated. Zeros before the
+                // first real sample are the start; after it, a block that was not
+                // filled is an underrun. A report taken at the client's TRX off
+                // closes the over until MOX is really off.
+                if (!Audio.MOX)
+                {
+                    m_tciTxOverClosed = false;
+                }
+                else if (!m_tciTxOverClosed)
+                {
+                    m_tciTxOverActive = true;
+                    m_tciTxOverBlocks++;
+                    m_tciTxOverBlockSamples = nsamples;
+                    if (!m_tciTxOverHeardAudio)
+                    {
+                        if (copied == 0)
+                            m_tciTxOverLeadZeroSamples += nsamples;
+                        else
+                        {
+                            m_tciTxOverHeardAudio = true;
+                            m_tciTxOverLowestQueued = queuedAtEntry;
+                        }
+                    }
+                    else if (queuedAtEntry < m_tciTxOverLowestQueued)
+                        m_tciTxOverLowestQueued = queuedAtEntry;
+                    if (m_tciTxOverHeardAudio && copied < nsamples)
+                    {
+                        m_tciTxOverZeroSamples += nsamples - copied;
+                        m_tciTxOverUnderruns++;
+                    }
+                }
+                // [ThetisLink TL2-5] END
             }
             m_tciTxStreamEvent.Set();
         }
