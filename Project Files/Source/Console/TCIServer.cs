@@ -3220,6 +3220,15 @@ namespace Thetis
 		}
 		// [ThetisLink TL2-1] END
 
+		// [ThetisLink TL2-6] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+		// Whether this client holds the TCI PTT (it keyed with TRX:..,true,tci and owns
+		// the TX audio). Read when the client goes away, and for the over report.
+		internal bool HoldsTciPtt
+		{
+			get { lock (m_objStreamLock) { return m_tciPttActive; } }
+		}
+		// [ThetisLink TL2-6] END
+
 		// [ThetisLink TL2-5] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
 		// tx_queue_report_ex: one line per MOX (cmaster.TakeTCITxOverReport). Self-gates
 		// on the ThetisLink-extensions checkbox.
@@ -4937,7 +4946,7 @@ namespace Thetis
                 // [ThetisLink TL2-5] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
                 // The client says stop: what the TX queue did in this MOX, and what it
                 // still holds, before anything is released or cleared.
-                if (bOK && !bMox)
+                if (bOK && !bMox && HoldsTciPtt) // [ThetisLink TL2-6] only the client that held the TCI PTT
                 {
                     string overReport = cmaster.TakeTCITxOverReport("trx");
                     if (overReport != null)
@@ -8494,6 +8503,15 @@ namespace Thetis
                 DecrementRecenterOwners();
             }
             // [ThetisLink TL2-1] END
+            // [ThetisLink TL2-6] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+            // A client that held the TCI PTT is gone - closed, crashed, network: its PTT
+            // goes with it. Stock Thetis left console.TCIPTT set, and PollPTT kept MOX on
+            // until the console or the MOX time-out took it off. Not behind the
+            // ThetisLink-extensions checkbox: a stock defect, like TL2-4. A PTT from the
+            // console, a footswitch or the microphone keeps MOX on its own source.
+            if (socketListener != null && socketListener.HoldsTciPtt && _console != null)
+                _console.TCIPTT = false;
+            // [ThetisLink TL2-6] END
         }
 
         // [ThetisLink TL2-1] BEGIN — modification by PA3GHM (cjenschede), 2026-05-14

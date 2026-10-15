@@ -1297,6 +1297,14 @@ namespace Thetis
                 string overReport = TakeTCITxOverReport("mox");
                 if (overReport != null && tciServer != null)
                     tciServer.BroadcastTxQueueReportEx(overReport);
+                // [ThetisLink TL2-6] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+                // MOX is off: the next MOX is a new over. Said here because after the
+                // client's TRX off the DSP callback no longer runs and never sees it.
+                lock (m_objTCITxStateLock)
+                {
+                    m_tciTxOverClosed = false;
+                }
+                // [ThetisLink TL2-6] END
             }
             // [ThetisLink TL2-5] END
             if (tciServer == null || !tciServer.UsesActiveTCITxAudio() || !Audio.MOX)

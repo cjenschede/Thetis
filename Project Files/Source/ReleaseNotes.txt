@@ -37,6 +37,20 @@ the standard TCI behaviour from upstream v2.10.3.15 is preserved (build
 environment and titlebar/About-tag changes listed below remain present in
 either mode).
 
+TL2-6 on top of TL2-5:
+
+- [fix] **Stock Thetis**: when a TCI client that keyed with `trx:..,true,tci`
+  went away (closed, crashed, network drop), its connection was cleaned up but
+  `console.TCIPTT` stayed set, so `PollPTT` kept MOX on until the console or the
+  MOX time-out took it off. The fork now clears the TCI PTT of that client in
+  `OnSocketListenerDisconnected`, the one place every disconnect passes. A PTT
+  from the console, a footswitch or the microphone keeps MOX on its own source.
+  Like TL2-4 this applies **regardless of the ThetisLink-extensions checkbox**:
+  it is a defect in standard Thetis.
+- [fix] `tx_queue_report_ex`: the report is taken only by the client that held
+  the TCI PTT, and an over is reopened when the TX thread sees MOX off (it no
+  longer depends on the first blocks of the next MOX).
+
 TL2-5 addition on top of TL2-4 (active when the checkbox is on):
 
 - [add] `tx_queue_report_ex` — one line per MOX telling the TCI client what
