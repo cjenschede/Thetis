@@ -37,6 +37,14 @@ the standard TCI behaviour from upstream v2.10.3.15 is preserved (build
 environment and titlebar/About-tag changes listed below remain present in
 either mode).
 
+TL2-7 on top of TL2-6:
+
+- [fix] **Stock Thetis**, the same defect as TL2-6 for TUNE: a TCI client that
+  switched TUNE on (`tune:<r>,true`) and went away left `console.TUN` on. The
+  fork now switches it off in `OnSocketListenerDisconnected` when that client
+  had it on (through the UI thread). Regardless of the ThetisLink-extensions
+  checkbox, like TL2-6.
+
 TL2-6 on top of TL2-5:
 
 - [fix] **Stock Thetis**: when a TCI client that keyed with `trx:..,true,tci`

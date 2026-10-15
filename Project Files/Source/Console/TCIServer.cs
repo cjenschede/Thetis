@@ -793,6 +793,10 @@ namespace Thetis
         private int m_txStreamAudioBufferingMs = 50;
         private bool m_txUsesTCIAudio = false;
         private bool m_tciPttActive = false;
+        // [ThetisLink TL2-7] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+        // This client switched TUNE on (tune:<r>,true) and not off again.
+        private bool m_tciTuneOn = false;
+        // [ThetisLink TL2-7] END
         private int m_txQueuedComplexSamples = 0;
         private bool m_seenModernTxAudioNegotiation = false;
         // [ThetisLink TL2-1] BEGIN — modification by PA3GHM (cjenschede), 2026-05-14
@@ -3226,6 +3230,11 @@ namespace Thetis
 		internal bool HoldsTciPtt
 		{
 			get { lock (m_objStreamLock) { return m_tciPttActive; } }
+		}
+		// Whether this client switched TUNE on and has not switched it off ([ThetisLink TL2-7]).
+		internal bool HoldsTciTune
+		{
+			get { lock (m_objStreamLock) { return m_tciTuneOn; } }
 		}
 		// [ThetisLink TL2-6] END
 
@@ -5865,6 +5874,9 @@ namespace Thetis
 					bOK = bool.TryParse(args[1], out tune);
                 if (bOK)
                 {
+                    // [ThetisLink TL2-7] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+                    lock (m_objStreamLock) { m_tciTuneOn = tune; }
+                    // [ThetisLink TL2-7] END
 					if(consoleThreadSafe.TUN != tune)
 						consoleThreadSafe.TUN = tune;
                 }
@@ -8511,6 +8523,23 @@ namespace Thetis
             // console, a footswitch or the microphone keeps MOX on its own source.
             if (socketListener != null && socketListener.HoldsTciPtt && _console != null)
                 _console.TCIPTT = false;
+            // [ThetisLink TL2-7] BEGIN — modification by PA3GHM (cjenschede), 2026-10-15
+            // The same for a TUNE this client switched on: stock Thetis left
+            // console.TUN on when the client went away. TUN is chkTUN.Checked, so it
+            // goes through the UI thread, without waiting (this can run on the
+            // listener thread). Regardless of the extensions checkbox, like TL2-6.
+            if (socketListener != null && socketListener.HoldsTciTune && _console != null && !_console.IsDisposed)
+            {
+                Console console = _console;
+                Action tuneOff = () => { if (console.TUN) console.TUN = false; };
+                try
+                {
+                    if (console.InvokeRequired) console.BeginInvoke(tuneOff);
+                    else tuneOff();
+                }
+                catch { /* the console is closing */ }
+            }
+            // [ThetisLink TL2-7] END
             // [ThetisLink TL2-6] END
         }
 
