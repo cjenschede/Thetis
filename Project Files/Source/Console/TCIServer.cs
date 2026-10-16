@@ -2801,6 +2801,11 @@ namespace Thetis
 			caps.Add("tx_queue_report_ex");
 			// [ThetisLink TL2-5] END
 
+			// [ThetisLink TL2-8] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+			// vfo_source_ex:<rx>,tl|thetis; - who changed the VFO last, per receiver.
+			caps.Add("vfo_source_ex");
+			// [ThetisLink TL2-8] END
+
 			sendTextFrame("tci_caps_ex:" + string.Join(",", caps) + ";");
 		}
 
@@ -2836,6 +2841,11 @@ namespace Thetis
 			// VHF/UHF convention). The TL-server needs this value to render the
 			// client S-meter consistently with Thetis' own Multimeter widget.
 			sendS9FrequencyEx(consoleThreadSafe.S9Frequency);
+			// [ThetisLink TL2-8] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+			// Who tuned last, so a client that connects knows it at once.
+			sendVfoSourceEx(0, consoleThreadSafe.VfoLastFromThetisLink(0));
+			sendVfoSourceEx(1, consoleThreadSafe.VfoLastFromThetisLink(1));
+			// [ThetisLink TL2-8] END
 		}
 
 		// Lazy-init for the DiversityForm. CAT diversity properties on Console proxy to
@@ -3247,6 +3257,21 @@ namespace Thetis
 			sendTextFrame(report);
 		}
 		// [ThetisLink TL2-5] END
+
+		// [ThetisLink TL2-8] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+		// vfo_source_ex:<rx>,tl|thetis;  Who changed the VFO of this receiver last:
+		// ThetisLink (the recenter owner) or Thetis itself. Self-gates on the
+		// ThetisLink-extensions checkbox.
+		private void sendVfoSourceEx(int rx, bool fromThetisLink)
+		{
+			sendTextFrame("vfo_source_ex:" + rx.ToString() + "," + (fromThetisLink ? "tl" : "thetis") + ";");
+		}
+		public void PushVfoSourceEx(int rx, bool fromThetisLink)
+		{
+			if (consoleThreadSafe == null || !consoleThreadSafe.ThetisLinkExtensionsEnabled) return;
+			sendVfoSourceEx(rx, fromThetisLink);
+		}
+		// [ThetisLink TL2-8] END
 
 		// [ThetisLink TL2-3] BEGIN — modification by PA3GHM (cjenschede), 2026-05-29
 		// rx_only_ex:<bool>;  Push of the current "Receive only" state. Mirrors
@@ -6657,7 +6682,14 @@ namespace Thetis
                         handleModulationMessage(args);
                         break;
                     case "vfo":
-                        handleVFOMessage(args);
+                        // [ThetisLink TL2-8] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+                        // The recenter owner's VFO change is ThetisLink's: flagged on the
+                        // UI thread, so the console knows who tuned last (vfo_source_ex).
+                        if (m_isRecenterOwner && _console != null && _console.ThetisLinkExtensionsEnabled)
+                            _console.AsThetisLinkVfoChange(() => handleVFOMessage(args));
+                        else
+                            handleVFOMessage(args);
+                        // [ThetisLink TL2-8] END
                         break;
                     case "trx":
                         handleTrxMessage(args);
@@ -8603,6 +8635,24 @@ namespace Thetis
             }
         }
         // [ThetisLink TL2-5] END
+
+        // [ThetisLink TL2-8] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+        // Who changed the VFO last, to every listener (each self-gated on the
+        // extensions checkbox). Called by the console on a flip of the source.
+        internal void BroadcastVfoSourceEx(int rx, bool fromThetisLink)
+        {
+            lock (m_objLocker)
+            {
+                if (m_socketListenersList == null) return;
+                foreach (var listener in m_socketListenersList)
+                {
+                    if (listener == null || listener.IsDisconnected()) continue;
+                    try { listener.PushVfoSourceEx(rx, fromThetisLink); }
+                    catch { /* best-effort; never let one listener block the others */ }
+                }
+            }
+        }
+        // [ThetisLink TL2-8] END
 
         // [ThetisLink TL2-4] BEGIN — modification by PA3GHM (cjenschede), 2026-06-03
         // Broadcast a rx_filter_band frame to every connected listener after a

@@ -15074,6 +15074,49 @@ namespace Thetis
         }
         // [ThetisLink TL2-1] END
 
+        // [ThetisLink TL2-8] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+        // Who changed the VFO last, per receiver (0 = VFO A / RX1, 1 = VFO B / RX2):
+        // ThetisLink - the TCI client that owns the recenter - or Thetis itself
+        // (mouse, knob, spectrum click, CAT, another TCI client). The smooth-scroll
+        // guards below skip Thetis' own scroll only after a change from ThetisLink,
+        // so the spectrum follows whoever tuned last. Starts as ThetisLink, which
+        // is how TL2-1 behaved before this.
+        private bool _vfo_change_from_tl = false;
+        private bool[] _vfo_last_from_tl = new bool[] { true, true };
+        private double[] _vfo_last_freq = new double[] { -1.0, -1.0 };
+        public bool VfoLastFromThetisLink(int rx)
+        {
+            return rx >= 0 && rx < 2 && _vfo_last_from_tl[rx];
+        }
+        // Runs a VFO change from the recenter owner on the UI thread, flagged as
+        // ThetisLink's. VFOAFreq/VFOBFreq do their work synchronously inside, so
+        // the flag is up exactly while that change is processed.
+        public void AsThetisLinkVfoChange(Action change)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new MethodInvoker(() => AsThetisLinkVfoChange(change)));
+                return;
+            }
+            _vfo_change_from_tl = true;
+            try { change(); }
+            finally { _vfo_change_from_tl = false; }
+        }
+        // Called where the VFO frequency is taken over (txtVFOAFreq_LostFocus,
+        // txtVFOBFreq_LostFocus). Only a real change counts; a source flip is
+        // pushed to the TCI clients (vfo_source_ex, self-gated on extensions).
+        private void noteVfoChange(int rx, double freq)
+        {
+            double f = Math.Round(freq, 6);
+            if (f == _vfo_last_freq[rx]) return;
+            _vfo_last_freq[rx] = f;
+            if (_vfo_last_from_tl[rx] == _vfo_change_from_tl) return;
+            _vfo_last_from_tl[rx] = _vfo_change_from_tl;
+            try { m_tcpTCIServer?.BroadcastVfoSourceEx(rx, _vfo_change_from_tl); }
+            catch { /* best-effort */ }
+        }
+        // [ThetisLink TL2-8] END
+
         private void UpdateTRXAnt()
         {
             if (chkRxAnt.Checked)
@@ -31490,6 +31533,9 @@ namespace Thetis
                 UpdateDDCs(rx2_enabled);// UpdateRXADCCtrl();
 
             double freq = m_dVFOAFreq;
+            // [ThetisLink TL2-8] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+            noteVfoChange(0, m_dVFOAFreq);
+            // [ThetisLink TL2-8] END
 
             //MW0LGE_21k8
             //override freq if using any splt split when TX'ing
@@ -31583,7 +31629,8 @@ namespace Thetis
                             // [ThetisLink TL2-1 2026-05-14]: smooth-scroll-LEFT — SKIP only when extensions on AND an active
                             // TL-server has claimed recenter via `auto_recenter_owner_ex`. Without an owner Thetis falls back
                             // to upstream behaviour and keeps scrolling on its own (otherwise VFO pins at visible edge).
-                            if (!(ThetisLinkExtensionsEnabled && ThetisLinkRecenterOwnerActive) && !bLimitToSpectral && (((-rx1_osc) - Lmargin) < Ldisp)) // scroll the spectrum display smoothly at the edge and keep going
+                            // [ThetisLink TL2-8 2026-10-16] — modification by PA3GHM (cjenschede): smooth-scroll-LEFT skipped only while the last VFO change came from ThetisLink
+                            if (!(ThetisLinkExtensionsEnabled && ThetisLinkRecenterOwnerActive && _vfo_last_from_tl[0]) && !bLimitToSpectral && (((-rx1_osc) - Lmargin) < Ldisp)) // scroll the spectrum display smoothly at the edge and keep going
                             {
                                 double adjustFreq = Ldisp - ((-rx1_osc) - Lmargin);
                                 CentreFrequency -= adjustFreq * 1e-6;
@@ -31591,7 +31638,8 @@ namespace Thetis
                             }
                             else
                             // [ThetisLink TL2-1 2026-05-14]: smooth-scroll-RIGHT — same gate as LEFT.
-                            if (!(ThetisLinkExtensionsEnabled && ThetisLinkRecenterOwnerActive) && !bLimitToSpectral && (((-rx1_osc) + Hmargin) > Hdisp))
+                            // [ThetisLink TL2-8 2026-10-16] — modification by PA3GHM (cjenschede): smooth-scroll-RIGHT skipped only while the last VFO change came from ThetisLink
+                            if (!(ThetisLinkExtensionsEnabled && ThetisLinkRecenterOwnerActive && _vfo_last_from_tl[0]) && !bLimitToSpectral && (((-rx1_osc) + Hmargin) > Hdisp))
                             {
                                 double adjustFreq = ((-rx1_osc) + Hmargin) - Hdisp;
                                 CentreFrequency += adjustFreq * 1e-6;
@@ -32521,6 +32569,9 @@ namespace Thetis
             }
 
             double freq = m_dVFOBFreq;
+            // [ThetisLink TL2-8] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+            noteVfoChange(1, m_dVFOBFreq);
+            // [ThetisLink TL2-8] END
 
             if (HardwareSpecific.Model == HPSDRModel.ANAN7000D || HardwareSpecific.Model == HPSDRModel.ANAN8000D ||
                 HardwareSpecific.Model == HPSDRModel.ANVELINAPRO3 || HardwareSpecific.Model == HPSDRModel.ANAN_G2 ||
@@ -32596,14 +32647,16 @@ namespace Thetis
                                 }
                                 else  // not a jump - more like tuning
                                 // [ThetisLink TL2-1 2026-05-14]: smooth-scroll-LEFT — gated on owner-handshake (see RX1 path).
-                                if (!(ThetisLinkExtensionsEnabled && ThetisLinkRecenterOwnerActive) && !bLimitToSpectral && (((-rx2_osc) - Lmargin) < Ldisp)) // scroll the spectrum display smoothly at the edge and keep going
+                                // [ThetisLink TL2-8 2026-10-16] — modification by PA3GHM (cjenschede): smooth-scroll-LEFT skipped only while the last VFO change came from ThetisLink
+                                if (!(ThetisLinkExtensionsEnabled && ThetisLinkRecenterOwnerActive && _vfo_last_from_tl[1]) && !bLimitToSpectral && (((-rx2_osc) - Lmargin) < Ldisp)) // scroll the spectrum display smoothly at the edge and keep going
                                 {
                                     double adjustFreq = Ldisp - ((-rx2_osc) - Lmargin);
                                     CentreRX2Frequency -= adjustFreq * 1.0e-6;
                                     rx2_osc -= adjustFreq;
                                 }
                                 // [ThetisLink TL2-1 2026-05-14]: smooth-scroll-RIGHT — gated on owner-handshake.
-                                else if (!(ThetisLinkExtensionsEnabled && ThetisLinkRecenterOwnerActive) && !bLimitToSpectral && (((-rx2_osc) + Hmargin) > Hdisp))
+                                // [ThetisLink TL2-8 2026-10-16] — modification by PA3GHM (cjenschede): smooth-scroll-RIGHT skipped only while the last VFO change came from ThetisLink
+                                else if (!(ThetisLinkExtensionsEnabled && ThetisLinkRecenterOwnerActive && _vfo_last_from_tl[1]) && !bLimitToSpectral && (((-rx2_osc) + Hmargin) > Hdisp))
                                 {
                                     double adjustFreq = ((-rx2_osc) + Hmargin) - Hdisp;
                                     CentreRX2Frequency += adjustFreq * 1.0e-6;

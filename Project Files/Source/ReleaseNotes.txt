@@ -37,6 +37,18 @@ the standard TCI behaviour from upstream v2.10.3.15 is preserved (build
 environment and titlebar/About-tag changes listed below remain present in
 either mode).
 
+TL2-8 on top of TL2-7:
+
+- [feature] **ThetisLink extensions on**: the spectrum follows whoever changed
+  the VFO last. A `vfo:` from the TCI client that owns the recenter
+  (`auto_recenter_owner_ex`) runs on the UI thread flagged as ThetisLink's;
+  any other change (mouse, knob, spectrum click, CAT, another TCI client) is
+  Thetis's own. Per receiver. Thetis' smooth scroll at the display edge is
+  skipped only while the last change came from ThetisLink, so tuning in Thetis
+  scrolls Thetis' own display again, as stock. A flip is pushed as
+  `vfo_source_ex:<rx>,tl|thetis;` (new cap `vfo_source_ex`, also in the
+  connect burst), so the ThetisLink server stops its own recenter meanwhile.
+
 TL2-7 on top of TL2-6:
 
 - [fix] **Stock Thetis**, the same defect as TL2-6 for TUNE: a TCI client that
