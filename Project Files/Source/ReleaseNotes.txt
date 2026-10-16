@@ -37,6 +37,17 @@ the standard TCI behaviour from upstream v2.10.3.15 is preserved (build
 environment and titlebar/About-tag changes listed below remain present in
 either mode).
 
+TL2-10 on top of TL2-9:
+
+- [feature] **ThetisLink extensions on**: `tx_queue_report_ex` is sent as
+  format version 2, with four fields before the trigger: the average level of
+  the TCI TX queue after the first audio, the number of gaps (runs of blocks
+  that were not filled), the longest gap, and the gap still open when the over
+  ended (the tail before MOX off). Counted in the same TX callback, whole
+  samples, nothing allocated; nothing changes in what is transmitted. Version 2:
+  `tx_queue_report_ex:2,<rate>,<block samples>,<over ms>,<lead zero ms>,<lowest ms|-1>,<zero ms>,<underruns>,<left ms>,<open requests>,<average ms>,<gaps>,<longest gap ms>,<tail ms>,<trx|mox>;`
+  ThetisLink build 230 and later read versions 1 and 2.
+
 TL2-9 on top of TL2-8:
 
 - [feature] **ThetisLink extensions on**: an A/B swap (`vfo_swap_ex`) and

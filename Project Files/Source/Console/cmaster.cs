@@ -507,6 +507,18 @@ namespace Thetis
         private static long m_tciTxOverZeroSamples = 0;
         private static int m_tciTxOverUnderruns = 0;
         // [ThetisLink TL2-5] END
+        // [ThetisLink TL2-10] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+        // Version 2 of the report: the average queue level after the first
+        // audio, and the zeros as gaps - runs of blocks that were not filled.
+        // A gap opens on the first such block and closes on the first full one;
+        // the one still open at the report is the tail before MOX off.
+        private static long m_tciTxOverQueuedSum = 0;
+        private static long m_tciTxOverHeardBlocks = 0;
+        private static int m_tciTxOverGaps = 0;
+        private static long m_tciTxOverGapSamples = 0;
+        private static long m_tciTxOverLongestGap = 0;
+        private static bool m_tciTxOverInGap = false;
+        // [ThetisLink TL2-10] END
         // [ThetisLink TL2-1] BEGIN — modification by PA3GHM (cjenschede), 2026-05-07
         // Stock single cap split into standard (vink UIT) and extended (vink AAN). The
         // extended cap matches the hardware ceiling configured in SetRadioStructure (1536000).
@@ -1856,8 +1868,13 @@ namespace Thetis
         // One line per MOX for the ThetisLink server, then the counters start over:
         // tx_queue_report_ex:1,<rate>,<block samples>,<over ms>,<lead zero ms>,
         // <lowest ms|-1>,<zero ms>,<underruns>,<left ms>,<open requests>,<trigger>;
-        // The first field is the format version; the server reads version 1 only
-        // (sdr-remote-server tci_parser.rs) - the same agreement in two programs.
+        // The first field is the format version - the same agreement in two
+        // programs (sdr-remote-server tci_parser.rs).
+        // [ThetisLink TL2-10] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+        // Sent as version 2 since TL2-10, four fields before the trigger:
+        // ...,<open requests>,<average ms>,<gaps>,<longest gap ms>,<tail ms>,<trigger>;
+        // The server reads versions 1 and 2 (ThetisLink build 230 and later).
+        // [ThetisLink TL2-10] END
         // Null when no over was counted since the last report.
         internal static string TakeTCITxOverReport(string trigger)
         {
@@ -1867,7 +1884,11 @@ namespace Thetis
                     return null;
                 long rate = m_cachedTxInputRate > 0 ? m_cachedTxInputRate : 48000;
                 Func<long, string> ms = samples => (samples * 1000 / rate).ToString(CultureInfo.InvariantCulture);
-                string report = "tx_queue_report_ex:1,"
+                // [ThetisLink TL2-10] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+                string average = m_tciTxOverHeardBlocks > 0 ? ms(m_tciTxOverQueuedSum / m_tciTxOverHeardBlocks) : "0";
+                string tail = m_tciTxOverInGap ? ms(m_tciTxOverGapSamples) : "0";
+                // [ThetisLink TL2-10] END
+                string report = "tx_queue_report_ex:2,"
                     + rate.ToString(CultureInfo.InvariantCulture) + ","
                     + m_tciTxOverBlockSamples.ToString(CultureInfo.InvariantCulture) + ","
                     + ms(m_tciTxOverBlocks * m_tciTxOverBlockSamples) + ","
@@ -1877,6 +1898,12 @@ namespace Thetis
                     + m_tciTxOverUnderruns.ToString(CultureInfo.InvariantCulture) + ","
                     + ms(m_tciTxQueuedSamples) + ","
                     + m_tciTxChronoOutstanding.ToString(CultureInfo.InvariantCulture) + ","
+                    // [ThetisLink TL2-10] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+                    + average + ","
+                    + m_tciTxOverGaps.ToString(CultureInfo.InvariantCulture) + ","
+                    + ms(m_tciTxOverLongestGap) + ","
+                    + tail + ","
+                    // [ThetisLink TL2-10] END
                     + trigger + ";";
                 m_tciTxOverActive = false;
                 m_tciTxOverClosed = Audio.MOX;
@@ -1886,6 +1913,14 @@ namespace Thetis
                 m_tciTxOverLowestQueued = int.MaxValue;
                 m_tciTxOverZeroSamples = 0;
                 m_tciTxOverUnderruns = 0;
+                // [ThetisLink TL2-10] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+                m_tciTxOverQueuedSum = 0;
+                m_tciTxOverHeardBlocks = 0;
+                m_tciTxOverGaps = 0;
+                m_tciTxOverGapSamples = 0;
+                m_tciTxOverLongestGap = 0;
+                m_tciTxOverInGap = false;
+                // [ThetisLink TL2-10] END
                 return report;
             }
         }
@@ -1963,6 +1998,29 @@ namespace Thetis
                         m_tciTxOverZeroSamples += nsamples - copied;
                         m_tciTxOverUnderruns++;
                     }
+                    // [ThetisLink TL2-10] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+                    if (m_tciTxOverHeardAudio)
+                    {
+                        m_tciTxOverQueuedSum += queuedAtEntry;
+                        m_tciTxOverHeardBlocks++;
+                        if (copied < nsamples)
+                        {
+                            if (!m_tciTxOverInGap)
+                            {
+                                m_tciTxOverGaps++;
+                                m_tciTxOverGapSamples = 0;
+                                m_tciTxOverInGap = true;
+                            }
+                            m_tciTxOverGapSamples += nsamples - copied;
+                            if (m_tciTxOverGapSamples > m_tciTxOverLongestGap)
+                                m_tciTxOverLongestGap = m_tciTxOverGapSamples;
+                        }
+                        else
+                        {
+                            m_tciTxOverInGap = false;
+                        }
+                    }
+                    // [ThetisLink TL2-10] END
                 }
                 // [ThetisLink TL2-5] END
             }
