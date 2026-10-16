@@ -37,6 +37,14 @@ the standard TCI behaviour from upstream v2.10.3.15 is preserved (build
 environment and titlebar/About-tag changes listed below remain present in
 either mode).
 
+TL2-9 on top of TL2-8:
+
+- [feature] **ThetisLink extensions on**: an A/B swap (`vfo_swap_ex`) and
+  VFO sync (`vfo_sync_ex`) from the TCI client that owns the recenter count
+  as ThetisLink's VFO change, like its `vfo:` (TL2-8). Before, they counted
+  as Thetis' own, so Thetis scrolled its display until the next tune in
+  ThetisLink.
+
 TL2-8 on top of TL2-7:
 
 - [feature] **ThetisLink extensions on**: the spectrum follows whoever changed

@@ -6887,7 +6887,13 @@ namespace Thetis
                         handleRxPreampAttEx(args);
                         break;
                     case "vfo_sync_ex":
-                        handleVfoSyncEx(args);
+                        // [ThetisLink TL2-9] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+                        // VFO sync switched on by the recenter owner can set the other VFO: ThetisLink's change, like a vfo: (TL2-8).
+                        if (m_isRecenterOwner && _console != null && _console.ThetisLinkExtensionsEnabled)
+                            _console.AsThetisLinkVfoChange(() => handleVfoSyncEx(args));
+                        else
+                            handleVfoSyncEx(args);
+                        // [ThetisLink TL2-9] END
                         break;
                     case "fm_deviation_ex":
                         handleFMDeviationEx(args);
@@ -6993,7 +6999,13 @@ namespace Thetis
                         handleVfoSyncEx(null);
                         break;
                     case "vfo_swap_ex":
-                        handleVfoSwapEx();
+                        // [ThetisLink TL2-9] BEGIN — modification by PA3GHM (cjenschede), 2026-10-16
+                        // an A/B swap by the recenter owner moves both VFOs: ThetisLink's change, like a vfo: (TL2-8).
+                        if (m_isRecenterOwner && _console != null && _console.ThetisLinkExtensionsEnabled)
+                            _console.AsThetisLinkVfoChange(() => handleVfoSwapEx());
+                        else
+                            handleVfoSwapEx();
+                        // [ThetisLink TL2-9] END
                         break;
                     case "volume":
                         handleVolume(null, false);
