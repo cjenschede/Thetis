@@ -2811,6 +2811,7 @@ namespace Thetis
 			// Follows the checkbox (this list is only sent with extensions on).
 			// [ThetisLink TL2-12] BEGIN — modification by PA3GHM (cjenschede), 2026-10-21
 			// ... and only when ChannelMaster.dll took it (an older DLL does not have it).
+			// [ThetisLink TL2-13] Since TL2-13 the one step is taken at PTT release only.
 			if (_console != null && _console.TciMixOneStepAvailable)
 				caps.Add("tci_mix_one_step_ex");
 			// [ThetisLink TL2-12] END

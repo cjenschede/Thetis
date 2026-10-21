@@ -37,6 +37,17 @@ the standard TCI behaviour from upstream v2.10.3.15 is preserved (build
 environment and titlebar/About-tag changes listed below remain present in
 either mode).
 
+TL2-13 on top of TL2-12:
+
+- [change] **ThetisLink extensions on**: the TCI RX-audio mixer switches in
+  one step only when going back to receive (PTT release). At MOX on it uses
+  the two upstream calls again. At MOX on the mixer runs after RF Delay and
+  before the transmitter starts, so its time adds to the margin between the
+  PTT output (external amplifier, the T/R relay) and the first RF; TL2-11 made
+  that margin ~35 ms shorter. The measured gain was at release only (receive
+  audio back 30-40 ms sooner); at MOX on no difference was measured. Needs the
+  ChannelMaster.dll of this build next to Thetis.exe.
+
 TL2-12 on top of TL2-11:
 
 - [fix] **An older ChannelMaster.dll no longer stops Thetis at start.** TL2-11
@@ -45,7 +56,7 @@ TL2-12 on top of TL2-11:
   extensions on" failed with an error. Now Thetis starts, the mixer switches in
   two steps as before TL2-11, `tci_mix_one_step_ex` is not advertised, and one
   line goes to ErrorLog.txt. **The faster switch of TL2-11 (measured at home on
-  an ANAN-7000DLE: receive audio back ~40 ms sooner after PTT release) is only
+  an ANAN-7000DLE: receive audio back 30-40 ms sooner after PTT release) is only
   there with the ChannelMaster.dll that came with this Thetis.exe** - copy the
   two together.
 

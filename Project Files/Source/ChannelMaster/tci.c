@@ -111,7 +111,12 @@ static void apply_tci_audio_mix_state(int rx)
 		// mixer, and that blocks the caller (the MOX switch) for ~35 ms. At a MOX
 		// switch both inputs change, so the two calls cost that twice; one
 		// SetAAudioMixStates() reaches the same end state with one close/open.
-		if (_InterlockedAnd(&ptci->one_step, 1))
+		// [ThetisLink TL2-13] BEGIN - modification by PA3GHM (cjenschede), 2026-10-21
+		// Only when going back to receive. At MOX on the mixer runs after rf_delay
+		// and before the transmitter starts, so its time adds to the margin between
+		// the PTT output (amplifier, T/R relay) and the first RF; that stays upstream.
+		if (_InterlockedAnd(&ptci->one_step, 1) && !a->mox)
+		// [ThetisLink TL2-13] END
 		{
 			SetAAudioMixStates(a->mixer, 0, 3, (int)active);
 		}

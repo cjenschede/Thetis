@@ -15041,6 +15041,7 @@ namespace Thetis
                 // The TCI RX-audio mixer switches its two inputs in one step at MOX
                 // (ChannelMaster tci.c). Set on every assignment, not only on a change,
                 // so it holds after the settings are loaded whatever prev was.
+                // [ThetisLink TL2-13] Since TL2-13 the one step is taken at PTT release only.
                 // [ThetisLink TL2-12] BEGIN — modification by PA3GHM (cjenschede), 2026-10-21
                 // An older ChannelMaster.dll has no SetTCIRxAudioMixOneStep. Thetis then
                 // runs as before TL2-11 (two steps) instead of failing here, and does not
