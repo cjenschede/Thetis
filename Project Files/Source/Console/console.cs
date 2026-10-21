@@ -755,6 +755,9 @@ namespace Thetis
             LogTool.AddLogEntry("Initialising components...", "COMP");
 
             InitializeComponent();								// Windows Forms Generated Code
+            // [ThetisLink TL2-14] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
+            CreateThetisLinkLeanMenuItem();
+            // [ThetisLink TL2-14] END
             Common.DoubleBufferAll(this, true);
 
             InitialiseAndromedaMenus();
@@ -2829,6 +2832,12 @@ namespace Thetis
 
             a.Add("last_radio_protocol/" + Audio.LastRadioProtocol.ToString());
             a.Add("last_radio_hardware/" + Audio.LastRadioHardware.ToString());
+            // [ThetisLink TL2-14] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
+            a.Add("tl_lean_active/" + tl_lean_active.ToString());
+            a.Add("tl_lean_rx1_mode/" + tl_lean_rx1_mode);
+            a.Add("tl_lean_rx2_mode/" + tl_lean_rx2_mode);
+            a.Add("tl_lean_hidden/" + string.Join(";", tl_lean_hidden));
+            // [ThetisLink TL2-14] END
 
             a.Add("nr_selected/" + nr_selected_to_text());
 
@@ -4002,6 +4011,23 @@ namespace Thetis
                         //in the case of ptbVAC gains, they will be set by the TX profile
                         break;
 
+                    // [ThetisLink TL2-14] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
+                    // The displays (Off) and the macro hiding come back by themselves;
+                    // only the way back is kept here.
+                    case "tl_lean_active":
+                        tl_lean_active = val.ToLower() == "true";
+                        UpdateThetisLinkLeanMenuItem();
+                        break;
+                    case "tl_lean_rx1_mode":
+                        tl_lean_rx1_mode = val;
+                        break;
+                    case "tl_lean_rx2_mode":
+                        tl_lean_rx2_mode = val;
+                        break;
+                    case "tl_lean_hidden":
+                        tl_lean_hidden = new List<string>(val.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+                        break;
+                    // [ThetisLink TL2-14] END
                     case "last_radio_protocol":
                         Audio.LastRadioProtocol = (RadioProtocol)Enum.Parse(typeof(RadioProtocol), val);
                         break;
@@ -15062,6 +15088,12 @@ namespace Thetis
                 }
                 // [ThetisLink TL2-12] END
                 // [ThetisLink TL2-11] END
+                // [ThetisLink TL2-14] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
+                // With the extensions off Thetis is upstream: back to the normal view
+                // first, then the lean button goes.
+                if (!value && tl_lean_active) ThetisLinkLeanActive = false;
+                UpdateThetisLinkLeanMenuItem();
+                // [ThetisLink TL2-14] END
                 // [TL2-1 2026-05-14] Push a fresh caps frame to all connected TCI
                 // listeners so the TL-server drops cached caps and stops driving
                 // _ex features (specifically: no more CTUN-recenter after the
@@ -15095,6 +15127,99 @@ namespace Thetis
             get { return tci_mix_one_step_available; }
         }
         // [ThetisLink TL2-12] END
+
+        // [ThetisLink TL2-14] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
+        // "TL Lean": one button in the menu bar (only with ThetisLink extensions on) that
+        // turns both panadapter displays and the meter containers off while Thetis only
+        // serves ThetisLink, and puts back what it turned off. Containers are hidden with
+        // the macro hiding Thetis already has, which also holds over MOX; containers a
+        // macro had already hidden are left alone. Going back re-applies each container's
+        // own show rules (on RX, on TX, RX2 not in use), so one that was off stays off.
+        // What was turned off is kept in the console state, so a restart in lean mode can
+        // still go back.
+        private ToolStripMenuItem tlLeanToolStripMenuItem;
+        private bool tl_lean_active = false;
+        private string tl_lean_rx1_mode = "";
+        private string tl_lean_rx2_mode = "";
+        private List<string> tl_lean_hidden = new List<string>();
+
+        private void CreateThetisLinkLeanMenuItem()
+        {
+            tlLeanToolStripMenuItem = new ToolStripMenuItem("TL Lean");
+            tlLeanToolStripMenuItem.Name = "tlLeanToolStripMenuItem";
+            tlLeanToolStripMenuItem.ToolTipText = "ThetisLink: panadapter displays and meters off while Thetis only serves ThetisLink. Click again to restore them.";
+            tlLeanToolStripMenuItem.Visible = false;
+            tlLeanToolStripMenuItem.Click += (sender, e) => ThetisLinkLeanActive = !tl_lean_active;
+            menuStrip1.Items.Add(tlLeanToolStripMenuItem);
+        }
+
+        private void UpdateThetisLinkLeanMenuItem()
+        {
+            if (tlLeanToolStripMenuItem == null) return;
+            // Also visible in lean mode with the extensions off (after a restart), so the
+            // way back is never hidden.
+            tlLeanToolStripMenuItem.Visible = thetislink_extensions_enabled || tl_lean_active;
+            tlLeanToolStripMenuItem.Text = tl_lean_active ? "TL Lean: ON" : "TL Lean";
+            tlLeanToolStripMenuItem.Checked = tl_lean_active;
+        }
+
+        public bool ThetisLinkLeanActive
+        {
+            get { return tl_lean_active; }
+            set
+            {
+                if (value == tl_lean_active) return;
+                if (value && !thetislink_extensions_enabled) return;
+                if (value)
+                    enterThetisLinkLean();
+                else
+                    leaveThetisLinkLean();
+                UpdateThetisLinkLeanMenuItem();
+            }
+        }
+
+        private void enterThetisLinkLean()
+        {
+            tl_lean_rx1_mode = DisplayModeText;
+            tl_lean_rx2_mode = DisplayRX2ModeText;
+            tl_lean_hidden.Clear();
+            foreach (string id in MeterManager.GetFormGuidList())
+            {
+                if (MeterManager.ContainerIsHidden(id)) continue; // a macro hid it; not ours
+                MeterManager.HiddenByMacro(id, true);
+                tl_lean_hidden.Add(id);
+            }
+            SetDisplayMode(1, DisplayMode.OFF);
+            SetDisplayMode(2, DisplayMode.OFF);
+            tl_lean_active = true;
+            Common.LogString("ThetisLink TL2-14: lean on - RX1 display " + tl_lean_rx1_mode + " -> " + DisplayModeText +
+                ", RX2 display " + tl_lean_rx2_mode + " -> " + DisplayRX2ModeText + ", " + tl_lean_hidden.Count + " meter container(s) hidden");
+        }
+
+        private void leaveThetisLinkLean()
+        {
+            string rx1 = DisplayModeText;
+            string rx2 = DisplayRX2ModeText;
+            // A display chosen by hand in the meantime stays.
+            if (rx1 == "Off" && tl_lean_rx1_mode != "") DisplayModeText = tl_lean_rx1_mode;
+            if (rx2 == "Off" && tl_lean_rx2_mode != "") DisplayRX2ModeText = tl_lean_rx2_mode;
+            int shown = 0;
+            foreach (string id in tl_lean_hidden)
+            {
+                if (!MeterManager.ContainerIsHidden(id)) continue; // shown by hand in the meantime
+                MeterManager.HiddenByMacro(id, false);
+                // Un-hiding enables the container; its own rules decide whether it stays.
+                MeterManager.ShowContainerOnRX(id, MeterManager.ContainerShowOnRX(id));
+                MeterManager.ShowContainerOnTX(id, MeterManager.ContainerShowOnTX(id));
+                MeterManager.ContainerHidesWhenRXNotUsed(id, MeterManager.ContainerHidesWhenRXNotUsed(id));
+                shown++;
+            }
+            tl_lean_hidden.Clear();
+            tl_lean_active = false;
+            Common.LogString("ThetisLink TL2-14: lean off - RX1 display " + rx1 + " -> " + DisplayModeText +
+                ", RX2 display " + rx2 + " -> " + DisplayRX2ModeText + ", " + shown + " meter container(s) shown again");
+        }
+        // [ThetisLink TL2-14] END
 
         // [ThetisLink TL2-1] BEGIN — modification by PA3GHM (cjenschede), 2026-05-14
         // Set by TCPIPtciServer when a TCI client claims auto-recenter ownership via
