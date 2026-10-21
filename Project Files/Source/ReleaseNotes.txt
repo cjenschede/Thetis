@@ -37,6 +37,17 @@ the standard TCI behaviour from upstream v2.10.3.15 is preserved (build
 environment and titlebar/About-tag changes listed below remain present in
 either mode).
 
+TL2-18 on top of TL2-17:
+
+- [fix] **At close, the sequence-error check of a poll that is still waiting
+  no longer touches the freed network state** (`getOOO`, `getSeqInDelta` now
+  return 0 when it is gone, like the ADC overload check since TL2-17). Before,
+  it raised a caught access violation and that poll kept repeating in the
+  background until the process ended. Always active, as TL2-17. Needs the
+  ChannelMaster.dll of this build next to Thetis.exe.
+- Wording: the TL2-16 and TL2-17 notes above are corrected (SNR/NPSD in lean
+  mode; what the TL2-17 exception changes).
+
 TL2-17 on top of TL2-16:
 
 - [fix] **Closing Thetis with the radio still on could stop at a message
@@ -46,7 +57,8 @@ TL2-17 on top of TL2-16:
   thread then read freed memory. The pointer is now cleared, and that poll
   returns "no overload". This one applies **always, also with the ThetisLink
   extensions checkbox off** - a deliberate exception, as it only changes
-  something where Thetis would otherwise fail. (Before this fix: switch the
+  what happens after the network state is freed at close, where any use of it
+  was already wrong (corrected wording in TL2-18). (Before this fix: switch the
   radio off with Power first, then close Thetis.) Needs the ChannelMaster.dll
   of this build next to Thetis.exe.
 
@@ -60,7 +72,8 @@ TL2-16 on top of TL2-15:
   RX2 is turned on. The meter spectra have their own analyzers, which stop
   with their hidden containers. Auto AGC and a grid that follows the noise
   floor do not follow it in lean mode (with the displays Off that was already
-  so). The ErrorLog.txt line now says TL2-16.
+  so), and an SNR/NPSD value in the info bar stays at its last value from
+  before lean mode (added in TL2-18). The ErrorLog.txt line now says TL2-16.
 
 TL2-15 on top of TL2-14:
 

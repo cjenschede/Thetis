@@ -168,6 +168,10 @@ uint16_t getADCmaxMagnitude(int adc)
 PORT
 int getOOO() { // OOO == Out Of Order packet
 	int result = 0;
+	// [ThetisLink TL2-18] BEGIN - modification by PA3GHM (cjenschede), 2026-10-22
+	// After destroy_rnet (TL2-17) a sequence-error poll may still come at close.
+	if (prn == NULL) return 0;
+	// [ThetisLink TL2-18] END
 	if (prn->cc_seq_err > 0) // High Priority Command & Control
 		result = 1;
 	if (prn->rx[0].rx_in_seq_err > 0) // DDC0 I/Q data
@@ -208,6 +212,10 @@ PORT
 int getSeqInDelta(int nInit, int rx, int deltas[], char* dateTimeStamp, int *received_seqnum, int *last_seqnum) 
 {
 	int nRet = 0;
+
+	// [ThetisLink TL2-18] BEGIN - modification by PA3GHM (cjenschede), 2026-10-22
+	if (prn == NULL) return 0;
+	// [ThetisLink TL2-18] END
 
 	EnterCriticalSection(&prn->seqErrors);
 	

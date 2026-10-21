@@ -15239,7 +15239,8 @@ namespace Thetis
             tl_lean_hidden.Clear();
             tl_lean_active = false;
             // [ThetisLink TL2-16] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
-            // RX1 as the display asks (Scope and Phase keep it off); RX2 as upstream
+            // RX1 as the display asks (Spectrum, Histogram and Spectrascope keep it off;
+            // corrected in TL2-18); RX2 as upstream
             // leaves it after RX2 is turned on.
             cmaster.SetRunPanadapter(0, spec_display);
             cmaster.SetRunPanadapter(1, true);
