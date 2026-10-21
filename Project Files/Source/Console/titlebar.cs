@@ -59,9 +59,9 @@ namespace Thetis
     {
         public const string BUILD_NAME = "MW0LGE";
         // [ThetisLink TL2-1] BEGIN — modification by PA3GHM (cjenschede), 2026-05-06
-        // [ThetisLink TL2-15] BEGIN — value bump TL2-14 → TL2-15 (cjenschede, 2026-10-22)
-        public const string FORK_BUILD_NAME = "PA3GHM TL2-15";
-        // [ThetisLink TL2-15] END
+        // [ThetisLink TL2-16] BEGIN — value bump TL2-15 → TL2-16 (cjenschede, 2026-10-22)
+        public const string FORK_BUILD_NAME = "PA3GHM TL2-16";
+        // [ThetisLink TL2-16] END
         // [ThetisLink TL2-1] END
         public static string GetString(bool bWithFirmware = true)
         {

@@ -37,6 +37,18 @@ the standard TCI behaviour from upstream v2.10.3.15 is preserved (build
 environment and titlebar/About-tag changes listed below remain present in
 either mode).
 
+TL2-16 on top of TL2-15:
+
+- [change] **TL Lean also stops the panadapter analyzers** of RX1 and RX2
+  (the FFT behind the displays). With the displays Off only the drawing
+  stopped; the analyzers kept computing although nothing read them. Going back
+  starts them again (RX1 as the display mode asks, RX2 as after turning RX2
+  on). While in lean mode they stay off, also when a display mode is chosen or
+  RX2 is turned on. The meter spectra have their own analyzers, which stop
+  with their hidden containers. Auto AGC and a grid that follows the noise
+  floor do not follow it in lean mode (with the displays Off that was already
+  so). The ErrorLog.txt line now says TL2-16.
+
 TL2-15 on top of TL2-14:
 
 - [fix] **TL Lean also hides the meter containers that are not visible at

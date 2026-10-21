@@ -1662,7 +1662,10 @@ namespace Thetis
             set
             {
                 spec_display = value;
-                cmaster.SetRunPanadapter(0, value);
+                // [ThetisLink TL2-16] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
+                // In TL Lean mode the panadapter analyzer stays off, whatever the display asks.
+                cmaster.SetRunPanadapter(0, value && !tl_lean_active);
+                // [ThetisLink TL2-16] END
             }
         }
 
@@ -4016,6 +4019,13 @@ namespace Thetis
                     // only the way back is kept here.
                     case "tl_lean_active":
                         tl_lean_active = val.ToLower() == "true";
+                        // [ThetisLink TL2-16] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
+                        if (tl_lean_active)
+                        {
+                            cmaster.SetRunPanadapter(0, false);
+                            cmaster.SetRunPanadapter(1, false);
+                        }
+                        // [ThetisLink TL2-16] END
                         UpdateThetisLinkLeanMenuItem();
                         break;
                     case "tl_lean_rx1_mode":
@@ -15195,9 +15205,15 @@ namespace Thetis
             }
             SetDisplayMode(1, DisplayMode.OFF);
             SetDisplayMode(2, DisplayMode.OFF);
+            // [ThetisLink TL2-16] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
+            // With the displays Off nothing reads the panadapter analyzers (only the
+            // display thread does), but they keep computing; stop them too.
+            cmaster.SetRunPanadapter(0, false);
+            cmaster.SetRunPanadapter(1, false);
+            // [ThetisLink TL2-16] END
             tl_lean_active = true;
-            Common.LogString("ThetisLink TL2-15: lean on - RX1 display " + tl_lean_rx1_mode + " -> " + DisplayModeText +
-                ", RX2 display " + tl_lean_rx2_mode + " -> " + DisplayRX2ModeText + ", " + tl_lean_hidden.Count + " meter container(s) hidden");
+            Common.LogString("ThetisLink TL2-16: lean on - RX1 display " + tl_lean_rx1_mode + " -> " + DisplayModeText +
+                ", RX2 display " + tl_lean_rx2_mode + " -> " + DisplayRX2ModeText + ", " + tl_lean_hidden.Count + " meter container(s) hidden, panadapter analyzers stopped");
         }
 
         private void leaveThetisLinkLean()
@@ -15222,8 +15238,14 @@ namespace Thetis
             }
             tl_lean_hidden.Clear();
             tl_lean_active = false;
-            Common.LogString("ThetisLink TL2-15: lean off - RX1 display " + rx1 + " -> " + DisplayModeText +
-                ", RX2 display " + rx2 + " -> " + DisplayRX2ModeText + ", " + shown + " meter container(s) shown again");
+            // [ThetisLink TL2-16] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
+            // RX1 as the display asks (Scope and Phase keep it off); RX2 as upstream
+            // leaves it after RX2 is turned on.
+            cmaster.SetRunPanadapter(0, spec_display);
+            cmaster.SetRunPanadapter(1, true);
+            // [ThetisLink TL2-16] END
+            Common.LogString("ThetisLink TL2-16: lean off - RX1 display " + rx1 + " -> " + DisplayModeText +
+                ", RX2 display " + rx2 + " -> " + DisplayRX2ModeText + ", " + shown + " meter container(s) shown again, panadapter analyzers running");
         }
         // [ThetisLink TL2-14] END
 
@@ -37682,7 +37704,9 @@ namespace Thetis
                 }
                 cmaster.CMSetFRXNBRun(1);
                 cmaster.CMSetFRXNB2Run(1);
-                cmaster.SetRunPanadapter(1, true);
+                // [ThetisLink TL2-16] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
+                cmaster.SetRunPanadapter(1, !tl_lean_active);
+                // [ThetisLink TL2-16] END
                 //wave cmaster.CMSetSRXWavePlayRun(1);
                 //wave cmaster.CMSetSRXWaveRecordRun(1);
                 chkRX2.Checked = value;
