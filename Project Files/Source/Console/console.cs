@@ -15041,7 +15041,25 @@ namespace Thetis
                 // The TCI RX-audio mixer switches its two inputs in one step at MOX
                 // (ChannelMaster tci.c). Set on every assignment, not only on a change,
                 // so it holds after the settings are loaded whatever prev was.
-                cmaster.SetTCIRxAudioMixOneStep(value ? 1 : 0);
+                // [ThetisLink TL2-12] BEGIN — modification by PA3GHM (cjenschede), 2026-10-21
+                // An older ChannelMaster.dll has no SetTCIRxAudioMixOneStep. Thetis then
+                // runs as before TL2-11 (two steps) instead of failing here, and does not
+                // advertise tci_mix_one_step_ex.
+                try
+                {
+                    cmaster.SetTCIRxAudioMixOneStep(value ? 1 : 0);
+                    tci_mix_one_step_available = true;
+                }
+                catch (EntryPointNotFoundException)
+                {
+                    tci_mix_one_step_available = false;
+                    if (!tci_mix_one_step_missing_logged)
+                    {
+                        tci_mix_one_step_missing_logged = true;
+                        Common.LogString("ThetisLink TL2-12: this ChannelMaster.dll has no SetTCIRxAudioMixOneStep - the TCI RX-audio mixer switches in two steps at MOX, as before TL2-11. Copy the ChannelMaster.dll that came with this Thetis.exe for the faster switch.");
+                    }
+                }
+                // [ThetisLink TL2-12] END
                 // [ThetisLink TL2-11] END
                 // [TL2-1 2026-05-14] Push a fresh caps frame to all connected TCI
                 // listeners so the TL-server drops cached caps and stops driving
@@ -15064,6 +15082,18 @@ namespace Thetis
             }
         }
         // [ThetisLink TL2-1] END
+
+        // [ThetisLink TL2-12] BEGIN — modification by PA3GHM (cjenschede), 2026-10-21
+        // Whether ChannelMaster.dll took the one-step switch (TL2-11): false until the
+        // setter above called it, and false with an older DLL. TCIServer advertises
+        // tci_mix_one_step_ex only when this is true.
+        private bool tci_mix_one_step_available = false;
+        private bool tci_mix_one_step_missing_logged = false;
+        public bool TciMixOneStepAvailable
+        {
+            get { return tci_mix_one_step_available; }
+        }
+        // [ThetisLink TL2-12] END
 
         // [ThetisLink TL2-1] BEGIN — modification by PA3GHM (cjenschede), 2026-05-14
         // Set by TCPIPtciServer when a TCI client claims auto-recenter ownership via

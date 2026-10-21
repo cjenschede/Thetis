@@ -37,6 +37,18 @@ the standard TCI behaviour from upstream v2.10.3.15 is preserved (build
 environment and titlebar/About-tag changes listed below remain present in
 either mode).
 
+TL2-12 on top of TL2-11:
+
+- [fix] **An older ChannelMaster.dll no longer stops Thetis at start.** TL2-11
+  needs the `SetTCIRxAudioMixOneStep` export of its own ChannelMaster.dll; with
+  an older DLL next to the new Thetis.exe, loading a saved "ThetisLink
+  extensions on" failed with an error. Now Thetis starts, the mixer switches in
+  two steps as before TL2-11, `tci_mix_one_step_ex` is not advertised, and one
+  line goes to ErrorLog.txt. **The faster switch of TL2-11 (measured at home on
+  an ANAN-7000DLE: receive audio back ~40 ms sooner after PTT release) is only
+  there with the ChannelMaster.dll that came with this Thetis.exe** - copy the
+  two together.
+
 TL2-11 on top of TL2-10:
 
 - [change] **ThetisLink extensions on**: at a MOX switch the TCI RX-audio
