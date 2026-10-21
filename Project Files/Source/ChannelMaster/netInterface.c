@@ -1626,6 +1626,14 @@ void destroy_rnet()
 	clearSnapshots();
 	DeleteCriticalSection(&prn->seqErrors);
 	free(prn);
+	// [ThetisLink TL2-17] BEGIN - modification by PA3GHM (cjenschede), 2026-10-22
+	// Always, also with ThetisLink extensions off: a poll of the ADC overload state
+	// still queued on the UI thread can run after this at close. With prn left
+	// pointing at freed memory it read that memory, the access violation was caught
+	// and Thetis showed "issue obtaining the ADC overload state" and did not close.
+	// getAndResetADC_Overload() checks for NULL and then returns 0.
+	prn = NULL;
+	// [ThetisLink TL2-17] END
 	_aligned_free(prbpfilter);
 	_aligned_free(prbpfilter2);
 	// destroy_obbuffs(0);

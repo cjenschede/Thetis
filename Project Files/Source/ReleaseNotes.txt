@@ -37,6 +37,19 @@ the standard TCI behaviour from upstream v2.10.3.15 is preserved (build
 environment and titlebar/About-tag changes listed below remain present in
 either mode).
 
+TL2-17 on top of TL2-16:
+
+- [fix] **Closing Thetis with the radio still on could stop at a message
+  "There has been an issue obtaining the ADC overload state"**, and Thetis
+  did not close. At close, ChannelMaster freed its network state but kept the
+  pointer to it; a poll of the ADC overload state still waiting on the UI
+  thread then read freed memory. The pointer is now cleared, and that poll
+  returns "no overload". This one applies **always, also with the ThetisLink
+  extensions checkbox off** - a deliberate exception, as it only changes
+  something where Thetis would otherwise fail. (Before this fix: switch the
+  radio off with Power first, then close Thetis.) Needs the ChannelMaster.dll
+  of this build next to Thetis.exe.
+
 TL2-16 on top of TL2-15:
 
 - [change] **TL Lean also stops the panadapter analyzers** of RX1 and RX2
