@@ -37,6 +37,19 @@ the standard TCI behaviour from upstream v2.10.3.15 is preserved (build
 environment and titlebar/About-tag changes listed below remain present in
 either mode).
 
+TL2-15 on top of TL2-14:
+
+- [fix] **TL Lean also hides the meter containers that are not visible at
+  that moment**: a container shown on TX only, or an RX2 container hidden
+  while RX2 is off. TL2-14 left those out, so they came back at MOX or when
+  RX2 was turned on (also from ThetisLink). Only containers a macro had
+  already hidden are left alone. Going back still re-applies each container's
+  own show rules, so those end up invisible again as before.
+- **Note:** switch TL Lean off before you close Thetis if you will then start
+  another Thetis (upstream, or an older fork build) on the same settings. That
+  Thetis does not know TL Lean: it starts with the displays Off and the meter
+  containers hidden by macro, and has no button to bring them back.
+
 TL2-14 on top of TL2-13:
 
 - [feature] **ThetisLink extensions on**: a "TL Lean" button in the menu bar.
@@ -49,7 +62,7 @@ TL2-14 on top of TL2-13:
   re-applies each container's own show rules. Closing Thetis in lean mode
   starts it in lean mode again, and the button still knows the way back. With
   the extensions checkbox off the normal view comes back and the button goes.
-  Each switch writes one line to ErrorLog.txt. ThetisLink is not affected: its
+  Each switch writes one line to ErrorLog.txt (from TL2-15 on the line says TL2-15). ThetisLink is not affected: its
   spectra come from the TCI IQ stream.
 
 TL2-13 on top of TL2-12:

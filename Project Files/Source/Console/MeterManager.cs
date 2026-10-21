@@ -3159,6 +3159,22 @@ namespace Thetis
 
             return false;
         }
+        // [ThetisLink TL2-15] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
+        // Only the macro half of ContainerIsHidden, which also says "hidden" for a
+        // container that is just not visible now (shown on TX only, or RX2 not in use).
+        // The same lock-free read, for the same deadlock reason.
+        public static bool ContainerHiddenByMacroOnly(string sId)
+        {
+            int loop = 20;
+            bool ret = false;
+            while (loop > 0)
+            {
+                if (_concurrent_hidden_by_macro.TryGetValue(sId, out ret)) return ret;
+                loop--;
+            }
+            return false;
+        }
+        // [ThetisLink TL2-15] END
         public static bool ContainerShowOnRX(string sId)
         {
             lock (_metersLock)

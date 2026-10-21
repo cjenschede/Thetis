@@ -15185,14 +15185,18 @@ namespace Thetis
             tl_lean_hidden.Clear();
             foreach (string id in MeterManager.GetFormGuidList())
             {
-                if (MeterManager.ContainerIsHidden(id)) continue; // a macro hid it; not ours
+                // [ThetisLink TL2-15] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
+                // Skip only what a macro hid: a container that is just not visible now
+                // (shown on TX only, RX2 not in use) would come back at MOX or RX2 on.
+                if (MeterManager.ContainerHiddenByMacroOnly(id)) continue; // a macro hid it; not ours
+                // [ThetisLink TL2-15] END
                 MeterManager.HiddenByMacro(id, true);
                 tl_lean_hidden.Add(id);
             }
             SetDisplayMode(1, DisplayMode.OFF);
             SetDisplayMode(2, DisplayMode.OFF);
             tl_lean_active = true;
-            Common.LogString("ThetisLink TL2-14: lean on - RX1 display " + tl_lean_rx1_mode + " -> " + DisplayModeText +
+            Common.LogString("ThetisLink TL2-15: lean on - RX1 display " + tl_lean_rx1_mode + " -> " + DisplayModeText +
                 ", RX2 display " + tl_lean_rx2_mode + " -> " + DisplayRX2ModeText + ", " + tl_lean_hidden.Count + " meter container(s) hidden");
         }
 
@@ -15206,7 +15210,9 @@ namespace Thetis
             int shown = 0;
             foreach (string id in tl_lean_hidden)
             {
-                if (!MeterManager.ContainerIsHidden(id)) continue; // shown by hand in the meantime
+                // [ThetisLink TL2-15] BEGIN — modification by PA3GHM (cjenschede), 2026-10-22
+                if (!MeterManager.ContainerHiddenByMacroOnly(id)) continue; // shown by hand in the meantime
+                // [ThetisLink TL2-15] END
                 MeterManager.HiddenByMacro(id, false);
                 // Un-hiding enables the container; its own rules decide whether it stays.
                 MeterManager.ShowContainerOnRX(id, MeterManager.ContainerShowOnRX(id));
@@ -15216,7 +15222,7 @@ namespace Thetis
             }
             tl_lean_hidden.Clear();
             tl_lean_active = false;
-            Common.LogString("ThetisLink TL2-14: lean off - RX1 display " + rx1 + " -> " + DisplayModeText +
+            Common.LogString("ThetisLink TL2-15: lean off - RX1 display " + rx1 + " -> " + DisplayModeText +
                 ", RX2 display " + rx2 + " -> " + DisplayRX2ModeText + ", " + shown + " meter container(s) shown again");
         }
         // [ThetisLink TL2-14] END
