@@ -43,10 +43,13 @@ TL2-13 on top of TL2-12:
   one step only when going back to receive (PTT release). At MOX on it uses
   the two upstream calls again. At MOX on the mixer runs after RF Delay and
   before the transmitter starts, so its time adds to the margin between the
-  PTT output (external amplifier, the T/R relay) and the first RF; TL2-11 made
-  that margin ~35 ms shorter. The measured gain was at release only (receive
-  audio back 30-40 ms sooner); at MOX on no difference was measured. Needs the
-  ChannelMaster.dll of this build next to Thetis.exe.
+  PTT output (external amplifier, the T/R relay) and the first RF. TL2-11 made
+  that margin ~30 ms shorter (measured: the gap in the receive audio at MOX on
+  went from ~60 to ~30 ms); this build gives it back. At release the one step
+  stays (receive audio back 30-40 ms sooner); there the transmitter has already
+  stopped and flushed, and the margin before the PTT output drops is MOX Delay
+  plus one mixer round instead of two. Needs the ChannelMaster.dll of this
+  build next to Thetis.exe.
 
 TL2-12 on top of TL2-11:
 
