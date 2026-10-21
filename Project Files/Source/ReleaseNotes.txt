@@ -42,8 +42,9 @@ TL2-18 on top of TL2-17:
 - [fix] **At close, the sequence-error check of a poll that is still waiting
   no longer touches the freed network state** (`getOOO`, `getSeqInDelta` now
   return 0 when it is gone, like the ADC overload check since TL2-17). Before,
-  it raised a caught access violation and that poll kept repeating in the
-  background until the process ended. Always active, as TL2-17. Needs the
+  it could raise a caught access violation, and that poll could keep
+  repeating in the background until the process ended (read in the code, not
+  seen). Always active, as TL2-17. Needs the
   ChannelMaster.dll of this build next to Thetis.exe.
 - Wording: the TL2-16 and TL2-17 notes above are corrected (SNR/NPSD in lean
   mode; what the TL2-17 exception changes).
@@ -72,8 +73,10 @@ TL2-16 on top of TL2-15:
   RX2 is turned on. The meter spectra have their own analyzers, which stop
   with their hidden containers. Auto AGC and a grid that follows the noise
   floor do not follow it in lean mode (with the displays Off that was already
-  so), and an SNR/NPSD value in the info bar stays at its last value from
-  before lean mode (added in TL2-18). The ErrorLog.txt line now says TL2-16.
+  so). The NPSD and PBNP values in the info bar (shown with the mouse over the
+  display) stay at their last value from before lean mode, and PBSNR is
+  computed against that old noise floor (added in TL2-18). The ErrorLog.txt
+  line now says TL2-16.
 
 TL2-15 on top of TL2-14:
 
