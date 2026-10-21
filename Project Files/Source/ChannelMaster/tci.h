@@ -58,5 +58,8 @@ void SetTCITxMonitorRate(int id, int rate);
 PORT void SetTCIRxAudioMox(int id, int mox);
 PORT void SetTCIRxAudioMon(int id, int mon);
 PORT void SetTCIRxAudioMonVol(int id, double vol);
+// [ThetisLink TL2-11] BEGIN - modification by PA3GHM (cjenschede), 2026-10-21
+PORT void SetTCIRxAudioMixOneStep(int on);
+// [ThetisLink TL2-11] END
 
 #endif

@@ -57,6 +57,10 @@ typedef struct _tci
 {
 	void (*OutboundTCIRxAudio)(int id, int nsamples, double* buff);
 	tci_rcvr rcvr[cmMAXrcvr];
+	// [ThetisLink TL2-11] BEGIN - modification by PA3GHM (cjenschede), 2026-10-21
+	// Set while ThetisLink extensions are on: switch both mixer inputs in one call.
+	volatile long one_step;
+	// [ThetisLink TL2-11] END
 } tci, *TCI;
 
 static tci gtci = {0};
@@ -102,8 +106,21 @@ static void apply_tci_audio_mix_state(int rx)
 
 	if (a->active != active)
 	{
-		SetAAudioMixState(a->mixer, 0, 0, (active & 1) != 0);
-		SetAAudioMixState(a->mixer, 0, 1, (active & 2) != 0);
+		// [ThetisLink TL2-11] BEGIN - modification by PA3GHM (cjenschede), 2026-10-21
+		// Each SetAAudioMixState() that changes something closes and reopens the
+		// mixer, and that blocks the caller (the MOX switch) for ~35 ms. At a MOX
+		// switch both inputs change, so the two calls cost that twice; one
+		// SetAAudioMixStates() reaches the same end state with one close/open.
+		if (_InterlockedAnd(&ptci->one_step, 1))
+		{
+			SetAAudioMixStates(a->mixer, 0, 3, (int)active);
+		}
+		else
+		// [ThetisLink TL2-11] END
+		{
+			SetAAudioMixState(a->mixer, 0, 0, (active & 1) != 0);
+			SetAAudioMixState(a->mixer, 0, 1, (active & 2) != 0);
+		}
 		a->active = active;
 	}
 
@@ -295,6 +312,15 @@ void SetTCIRxAudioMox(int id, int mox)
 	if (id < pcm->cmRCVR)
 		apply_tci_audio_mix_state(id);
 }
+
+// [ThetisLink TL2-11] BEGIN - modification by PA3GHM (cjenschede), 2026-10-21
+// Set from the "ThetisLink extensions" checkbox. Off is upstream behaviour.
+PORT
+void SetTCIRxAudioMixOneStep(int on)
+{
+	_InterlockedExchange(&ptci->one_step, on ? 1 : 0);
+}
+// [ThetisLink TL2-11] END
 
 PORT
 void SetTCIRxAudioMon(int id, int mon)

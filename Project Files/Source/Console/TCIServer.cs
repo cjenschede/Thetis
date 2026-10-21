@@ -2806,6 +2806,12 @@ namespace Thetis
 			caps.Add("vfo_source_ex");
 			// [ThetisLink TL2-8] END
 
+			// [ThetisLink TL2-11] BEGIN — modification by PA3GHM (cjenschede), 2026-10-21
+			// Advertise-only: the TCI RX-audio mixer switches in one step at MOX.
+			// Follows the checkbox (this list is only sent with extensions on).
+			caps.Add("tci_mix_one_step_ex");
+			// [ThetisLink TL2-11] END
+
 			sendTextFrame("tci_caps_ex:" + string.Join(",", caps) + ";");
 		}
 

@@ -37,6 +37,16 @@ the standard TCI behaviour from upstream v2.10.3.15 is preserved (build
 environment and titlebar/About-tag changes listed below remain present in
 either mode).
 
+TL2-11 on top of TL2-10:
+
+- [change] **ThetisLink extensions on**: at a MOX switch the TCI RX-audio
+  mixer (ChannelMaster `tci.c`) changes its two inputs (receiver and TX
+  monitor) with one `SetAAudioMixStates()` call instead of two
+  `SetAAudioMixState()` calls. Each call that changes something closes and
+  reopens the mixer and blocks the MOX switch for ~35 ms; the end state is
+  the same. Advertised as `tci_mix_one_step_ex`. With the checkbox off the two
+  calls stay as upstream.
+
 TL2-10 on top of TL2-9:
 
 - [feature] **ThetisLink extensions on**: `tx_queue_report_ex` is sent as

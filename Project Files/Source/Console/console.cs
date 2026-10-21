@@ -15037,6 +15037,12 @@ namespace Thetis
                 // a valid recenter-owner anymore — clear the flag so smooth-scroll
                 // returns to upstream behaviour immediately.
                 if (!value) thetislink_recenter_owner_active = false;
+                // [ThetisLink TL2-11] BEGIN — modification by PA3GHM (cjenschede), 2026-10-21
+                // The TCI RX-audio mixer switches its two inputs in one step at MOX
+                // (ChannelMaster tci.c). Set on every assignment, not only on a change,
+                // so it holds after the settings are loaded whatever prev was.
+                cmaster.SetTCIRxAudioMixOneStep(value ? 1 : 0);
+                // [ThetisLink TL2-11] END
                 // [TL2-1 2026-05-14] Push a fresh caps frame to all connected TCI
                 // listeners so the TL-server drops cached caps and stops driving
                 // _ex features (specifically: no more CTUN-recenter after the

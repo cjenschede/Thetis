@@ -143,6 +143,11 @@ namespace Thetis
 
         [DllImport("ChannelMaster.dll", EntryPoint = "SetTCIRxAudioMonVol", CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetTCIRxAudioMonVol(int id, double vol);
+
+        // [ThetisLink TL2-11] BEGIN — modification by PA3GHM (cjenschede), 2026-10-21
+        [DllImport("ChannelMaster.dll", EntryPoint = "SetTCIRxAudioMixOneStep", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SetTCIRxAudioMixOneStep(int on);
+        // [ThetisLink TL2-11] END
         // end tci
 
         // router
