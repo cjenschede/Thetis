@@ -10,7 +10,7 @@ as the base point of this fork.
 - **Project:** Thetis
 - **Upstream maintainer:** Richard Samphire (MW0LGE)
 - **Upstream repository:** https://github.com/ramdor/Thetis
-- **Upstream archived:** 2 April 2026 (see upstream ReadMe.md)
+- **Upstream status:** archived 2 April 2026, active again since 2 July 2026 (see upstream ReadMe.md)
 - **Base tag for this fork:** `v2.10.3.15`
 - **License:** GNU General Public License, version 2 or later (`GPL-2.0-or-later`),
   see `LICENSE`
@@ -36,7 +36,7 @@ as the base point of this fork.
   TL2-7, TL2-17, TL2-18; see `ReleaseNotes.txt`). With the checkbox **on**, additional
   `_ex` TCI commands and push notifications are enabled for ThetisLink
   clients.
-- **Modifications:** see per-file SPDX headers and modification markers; the
+- **Modifications:** see the per-file modification markers (author and date); the
   cumulative diff against `v2.10.3.15` is the complete set of fork changes.
 - **License of modifications:** GNU General Public License, version 2 or later
   (`GPL-2.0-or-later`) — same as upstream. The dual-licensing reservation in

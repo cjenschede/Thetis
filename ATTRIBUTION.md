@@ -22,7 +22,7 @@ contributors.
 - **Maintainer:** Richard Samphire (MW0LGE) — `mw0lge@grange-lane.co.uk`
 - **Repository:** https://github.com/ramdor/Thetis
 - **Reference release for this fork:** `v2.10.3.15`
-- **Status:** archived 2 April 2026 — see upstream `ReadMe.md`
+- **Status:** archived 2 April 2026, active again since 2 July 2026 — see upstream `ReadMe.md`
 
 Richard Samphire's contributions to Thetis are dual-licensed: in addition to
 the GPL grant (`LICENSE`), he reserves the right to relicense his own work

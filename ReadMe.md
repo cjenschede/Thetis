@@ -5,7 +5,7 @@ maintained by **PA3GHM (cjenschede)** as the companion build for the
 [ThetisLink](https://github.com/cjenschede/ThetisLink) remote-control client.
 
 The fork is actively maintained on branch [`thetislink-tl2`](https://github.com/cjenschede/Thetis/tree/thetislink-tl2).
-For the upstream `master` branch (a verbatim mirror of ramdor's archived tree),
+For the upstream `master` branch (ramdor's tree as of the v2.10.3.15 base),
 switch the branch selector to `master`.
 
 ## Latest release
@@ -78,8 +78,8 @@ restoring the backed-up originals.
 
 ## Upstream
 
-Original Thetis project by Richard Samphire (MW0LGE), maintained from 2019
-to 2 April 2026 when it was archived. The upstream releases (with full
+Original Thetis project by Richard Samphire (MW0LGE), maintained since 2019;
+archived on 2 April 2026 and active again since 2 July 2026. The upstream releases (with full
 per-version change logs) are at:
 
 - Repository: <https://github.com/ramdor/Thetis>
@@ -107,8 +107,8 @@ additional reservation.
 
 ## Source diff against upstream
 
-Per-file SPDX headers and `[ThetisLink TL2-N] BEGIN/END` markers (N is the
-build that introduced the change) identify fork-modified sections. The
+`[ThetisLink TL2-N] BEGIN/END` markers (N is the build that introduced the
+change, with the author and the date) identify fork-modified sections. The
 cumulative diff against the upstream base tag is:
 
 ```bash
