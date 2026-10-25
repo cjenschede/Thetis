@@ -1,6 +1,6 @@
-# NOTICE — ThetisLink TL2-1 fork of Thetis
+# NOTICE — ThetisLink TL2 fork of Thetis
 
-ThetisLink TL2-1 is a fork of [Thetis](https://github.com/ramdor/Thetis)
+ThetisLink TL2 is a fork of [Thetis](https://github.com/ramdor/Thetis)
 by Richard Samphire (MW0LGE) — see upstream
 [ramdor/Thetis@v2.10.3.15](https://github.com/ramdor/Thetis/releases/tag/v2.10.3.15)
 as the base point of this fork.
@@ -22,7 +22,7 @@ as the base point of this fork.
 
 ## This fork
 
-- **Fork name:** ThetisLink TL2-1
+- **Fork name:** ThetisLink TL2 (current build: TL2-18)
 - **Fork maintainer:** PA3GHM (cjenschede)
 - **Branch:** `thetislink-tl2`
 - **Purpose:** companion application support for the
@@ -31,7 +31,9 @@ as the base point of this fork.
   "ThetisLink extensions" checkbox in `Setup > Network > IQ Stream`.
   With the checkbox **off**, the stock TCI extension behavior of upstream
   v2.10.3.15 is preserved (the fork still carries its own build tag,
-  release notes and About metadata). With the checkbox **on**, additional
+  release notes and About metadata), except for a few fixes of defects in
+  standard Thetis that apply regardless of the checkbox (TL2-4, TL2-6,
+  TL2-7, TL2-17, TL2-18; see `ReleaseNotes.txt`). With the checkbox **on**, additional
   `_ex` TCI commands and push notifications are enabled for ThetisLink
   clients.
 - **Modifications:** see per-file SPDX headers and modification markers; the
@@ -53,5 +55,5 @@ through the unbroken upstream history of this repository.
 
 ## Build identification
 
-Builds produced from this fork display `PA3GHM TL2-1` next to the upstream
-version string in the title bar.
+Builds produced from this fork display `PA3GHM TL2-N` (currently `PA3GHM TL2-18`)
+next to the upstream version string in the title bar.

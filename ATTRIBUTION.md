@@ -1,6 +1,6 @@
 # ATTRIBUTION — Thetis lineage and contributions
 
-This file documents the upstream lineage of the ThetisLink TL2-1 fork. For the
+This file documents the upstream lineage of the ThetisLink TL2 fork. For the
 fork-statement and license overview, see `NOTICE.md`. For the legal license
 text itself, see `LICENSE` (GPL-2.0) and `LICENSE-DUAL-LICENSING` (Richard
 Samphire's reservation on his own contributions).
@@ -8,7 +8,7 @@ Samphire's reservation on his own contributions).
 ## Project lineage
 
 ```
-PowerSDR  ──►  OpenHPSDR  ──►  Thetis  ──►  ThetisLink TL2-1
+PowerSDR  ──►  OpenHPSDR  ──►  Thetis  ──►  ThetisLink TL2
 (FlexRadio)    (community)    (ramdor)        (PA3GHM, this fork)
 ```
 
@@ -49,14 +49,15 @@ The original codebase was written and released by FlexRadio Systems under
 the GPL. Subsequent forks (OpenHPSDR, then Thetis, then this fork) build on
 that foundation.
 
-## ThetisLink TL2-1 contributions
+## ThetisLink TL2 contributions
 
 Modifications introduced in this fork (commits between `v2.10.3.15` and the
 current branch tip on `thetislink-tl2`):
 
 - **PA3GHM (cjenschede)** — fork maintainer; all ThetisLink-specific
   modifications, scoped behind the "ThetisLink extensions" checkbox in
-  `Setup > Network > IQ Stream`.
+  `Setup > Network > IQ Stream`, apart from a few fixes of defects in
+  standard Thetis that apply regardless of it (listed in `ReleaseNotes.txt`).
 
 Per-file modification markers within source files identify which functions or
 sections were changed and the date of change. The cumulative `git diff` from
